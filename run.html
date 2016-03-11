@@ -18,40 +18,45 @@
         compressor.connect(gainer);
 
         playCount = 0;
+        
+        var sounds = ['geiger-click.wav', 'beep.wav'];
 
-        var soundsLoaded = false;
-        var soundBuffer;
+        var soundsLoaded = 0;
+        var soundBuffers = [];
+        var requests = [];
 
-        var request = new XMLHttpRequest();
-        request.open('GET', 'geiger-click.wav', true);
-        request.responseType = 'arraybuffer';
+        for (i = 0; i < sounds.length; i++) {
+            requests[i] = new XMLHttpRequest();
+            requests[i].open('GET', sounds[i], true);
+            requests[i].responseType = 'arraybuffer';
 
-        request.onload = function () {
-            console.log ('request loaded');
-            var data = request.response;
-            audioCtx.decodeAudioData(data, function (buffer) {
-                console.log ('audio decoded');
-                soundBuffer = buffer;
-                soundsLoaded = true;
-            });
+            requests[i].onload = (function (k) { return function () {
+                console.log ('sound ' + sounds[k] + ' loaded');
+                var data = requests[k].response;
+                audioCtx.decodeAudioData(data, (function (j) { return function (buffer) {
+                    console.log ('audio ' + sounds[j] + ' decoded');
+                    soundBuffers[j] = buffer;
+                    soundsLoaded = soundsLoaded + 1;
+                }})(k));
+            }})(i);
+            requests[i].send();
         }
 
-        request.send();
 
         function playSound() {
-            if (!soundsLoaded) return;
+            if (soundsLoaded < sounds.length) return;
 
             var source = audioCtx.createBufferSource();
-            source.buffer = soundBuffer;
+            source.buffer = soundBuffers[getRandomInt(0, sounds.length)];
             source.connect(compressor);
             source.start();
 
             playCount = playCount + 1;
         }
 
-        function getRandomArbitrary(min, max)
+        function getRandomInt(min, max)
         {
-          return Math.random() * (max - min) + min;
+          return Math.floor(Math.random() * (max - min)) + min;
         }
 
         function repeated(f, timeout) {
@@ -60,8 +65,7 @@
         }
 
         function run() {
-            //for (i = 0; i < 10; i++)
-            repeated(playSound, getRandomArbitrary(100, 2000));
+            repeated(playSound, getRandomInt(100, 2000));
         }
 
         function set(t) {
