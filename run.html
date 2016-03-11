@@ -14,20 +14,45 @@
 
         playCount = 0;
 
-        function playSound() {
-            var audioElement = new Audio("geiger-click.wav");
-            var source = audioCtx.createMediaElementSource(audioElement);
-            source.connect(compressor);
+        var elements = [];
+        var sources = [];
+        var available = [];
 
-            audioElement.addEventListener("ended", function () {
-                playCount = playCount + 1;
-                source.disconnect();
-                delete source;
-                delete audioElement;
-            });
+        function addNewSource() {
+            var index = available.length;
 
-            audioElement.play();
+            available[index] = false;
+            elements[index] = new Audio("geiger-click.wav");
+            sources[index] = audioCtx.createMediaElementSource(elements[index]);
+
+            sources[index].connect(compressor);
+            available[index] = true;
             
+            console.log ("Added new source with index " + index);
+            return index;
+        }
+
+        function playSound() {
+            var index = -1;
+            for (i = 0; i < available.length; i++) { // >
+                if (available[i]) {
+                    index = i;
+                    break;
+                }
+            }
+            
+            if (index == -1) index = addNewSource();
+
+            available[index] = false;
+
+            var lockRemove = function () {
+                available[index] = true;
+                elements[index].removeEventListener("ended", lockRemove);
+                playCount = playCount + 1;
+            }
+
+            elements[index].addEventListener("ended", lockRemove);
+            elements[index].play();
         }
 
         function getRandomArbitrary(min, max)
