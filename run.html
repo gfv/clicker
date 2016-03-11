@@ -1,0 +1,71 @@
+<!doctype html>
+<html>
+    <script>
+        var audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        var compressor = audioCtx.createDynamicsCompressor();
+
+        compressor.threshold.value = -20;
+        compressor.knee.value = 0;
+        compressor.ratio.value = 5;
+        compressor.attack.value = 0;
+        compressor.release.value = 0;
+
+        compressor.connect(audioCtx.destination);
+
+        playCount = 0;
+
+        function playSound() {
+            var audioElement = new Audio("geiger-click.wav");
+            var source = audioCtx.createMediaElementSource(audioElement);
+            source.connect(compressor);
+
+            audioElement.addEventListener("ended", function () {
+                playCount = playCount + 1;
+                source.disconnect();
+                delete source;
+                delete audioElement;
+            });
+
+            audioElement.play();
+            
+        }
+
+        function getRandomArbitrary(min, max)
+        {
+          return Math.random() * (max - min) + min;
+        }
+
+        function repeated(f, timeout) {
+            f();
+            setTimeout(function () { repeated(f, timeout); }, timeout);
+        }
+
+        function run() {
+            for (i = 0; i < 10; i++)
+                repeated(playSound, getRandomArbitrary(100, 2000));
+        }
+
+        function set(t) {
+            v = document.getElementById(t).value;
+            compressor[t].value = parseInt(v);
+        }
+
+        function updatePC() {
+            document.getElementById('count').innerHTML = playCount;
+        }
+    </script>
+
+    <button type="button" onclick="run()">Play</button>
+    <br />
+    <div id="count">0</div>
+    <br />
+    <label for="threshold">threshold: </label><input type="text" id="threshold" /><button type="button" onclick="set('threshold')">set</button><br />
+    <label for="knee">knee: </label><input type="text" id="knee" /><button type="button" onclick="set('knee')">set</button><br />
+    <label for="ratio">ratio: </label><input type="text" id="ratio" /><button type="button" onclick="set('ratio')">set</button><br />
+    <label for="attack">attack: </label><input type="text" id="attack" /><button type="button" onclick="set('attack')">set</button><br />
+    <label for="release">release: </label><input type="text" id="release" /><button type="button" onclick="set('release')">set</button><br />
+
+    <script>
+        repeated (updatePC, 100);
+    </script>
+</html>
